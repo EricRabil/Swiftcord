@@ -9,7 +9,7 @@ let package = Package(
   ],
   dependencies: [
     // WebSockets for Linux and macOS
-    .package(url: "https://github.com/vapor/websocket-kit", .branch("main")),
+    .package(url: "https://github.com/vapor/websocket-kit", from: "2.6.1"),
     // Logging for Swift
     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.2"),
     // Library that contains common mimetypes
