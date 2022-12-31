@@ -14,3 +14,18 @@ public enum ComponentTypes: Int, Encodable {
 public protocol Component: Encodable {
     var type: ComponentTypes { get }
 }
+
+extension Component {
+    func encode(_ encoder: Encoder) throws {
+        try encode(to: encoder)
+    }
+}
+
+extension Array {
+    func encode(_ encoder: Encoder) throws where Element == any Component {
+        var container = encoder.unkeyedContainer()
+        for component in self {
+            try component.encode(to: container.superEncoder())
+        }
+    }
+}

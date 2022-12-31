@@ -15,7 +15,7 @@ public class ButtonBuilder: Encodable {
     public var embeds: [EmbedBuilder]?
 
     /// The buttons array
-    public var components: [ActionRow<Button>]
+    public var components: [ActionRow]
 
     public init(message: String? = nil, embed: EmbedBuilder? = nil) {
         self.content = message
@@ -28,7 +28,7 @@ public class ButtonBuilder: Encodable {
         self.components = []
     }
 
-    public func addComponent(component: ActionRow<Button>) -> Self {
+    public func addComponent(component: ActionRow) -> Self {
         components.append(component)
         return self
     }
@@ -55,5 +55,15 @@ public struct Button: Component {
         self.label = label
         self.emoji = emoji
         self.url = url
+    }
+}
+
+public extension InteractionBodyBuilder {
+    @discardableResult func addButtons(_ buttons: [Button]) -> InteractionBodyBuilder {
+        addComponent(ActionRow(components: buttons))
+    }
+    
+    @discardableResult func addButtons(_ buttons: Button...) -> InteractionBodyBuilder {
+        addButtons(buttons)
     }
 }

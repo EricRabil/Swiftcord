@@ -6,74 +6,23 @@
 //
 
 import Foundation
+import DictionaryCoder
 
-public class SlashCommandEvent: InteractionEvent {
-
-    public var channelId: Snowflake
-
-    private let data: [String: Any]
-
-    public let interactionId: Snowflake
-
-    public let swiftcord: Swiftcord
-
-    public let token: String
-
-    /// Guild object for this channel
-    public var guild: Guild? {
-        return self.swiftcord.getGuild(for: channelId)
-    }
-
-    public let name: String
-
-    public var member: Member?
-
-    public let user: User
-
+public class SlashCommandEvent: BaseCommandEvent {
     public var options = [SlashCommandEventOptions]()
 
-    public var ephemeral: Int
-
-    public var isDefered: Bool
-
-    init(_ swiftcord: Swiftcord, data: [String: Any]) {
-        // Store the data for later
-        self.data = data
-
+    public override init(_ swiftcord: Swiftcord, data: [String: Any]) async throws {
         let options = data["data"] as! [String: Any]
-
-        self.name = options["name"] as! String
 
         if let eventOptions =  options["options"] as? [Any] {
             for option in eventOptions {
                 self.options.append(SlashCommandEventOptions(data: option as! [String: Any]))
             }
         }
-
-        self.channelId = Snowflake(data["channel_id"])!
-
-        if let userJson = data["member"] as? [String: Any] {
-            self.user = User(swiftcord, userJson["user"] as! [String: Any])
-        } else {
-            self.user = User(swiftcord, data["user"] as! [String: Any])
-        }
-
-
-        self.swiftcord = swiftcord
-        self.token = data["token"] as! String
-
-        self.interactionId = Snowflake(data["id"] as! String)!
-
-        self.ephemeral = 0
-        self.isDefered = false
-
-        self.member = nil
-        if let guild = guild {
-            self.member = Member(swiftcord, guild, data["member"] as! [String: Any])
-        }
+        try await super.init(swiftcord, data: data)
     }
     
-    public func getOptionAsAttachment(optionName: String) -> Attachment? {
+    public func getOptionAsAttachment(optionName: String) throws -> Attachment? {
         let options = self.data["data"] as! [String: Any]
         var attachment: Attachment?
         
@@ -83,7 +32,7 @@ public class SlashCommandEvent: InteractionEvent {
                     if option.type == .attatchment {
                         let id = (options["options"] as! [Any])[0] as! [String:Any]
                         let data = (optionData["attachments"] as! [String:Any])[id["value"] as! String] as! [String:Any]
-                        attachment = Attachment(data)
+                        attachment = try DictionaryDecoder().decode(from: data)
                         break
                     }
                 }

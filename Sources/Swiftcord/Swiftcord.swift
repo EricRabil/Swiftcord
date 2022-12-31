@@ -590,7 +590,7 @@ open class Swiftcord {
         in channelId: Snowflake
     ) async throws -> Message {
         let data = try await self.request(.editMessage(channelId, messageId), body: options)
-        return Message(self, data as! [String: Any])
+        return try await Message(self, data as! [String: Any])
     }
 
     /**
@@ -1091,7 +1091,7 @@ open class Swiftcord {
         from channelId: Snowflake
     ) async throws -> Message {
         let data = try await self.request(.getChannelMessage(channelId, messageId))
-        return Message(self, data as! [String: Any])
+        return try await Message(self, data as! [String: Any])
     }
 
     /**
@@ -1116,10 +1116,19 @@ open class Swiftcord {
         var returnMessages = [Message]()
         let messages = data as! [[String: Any]]
         for message in messages {
-            returnMessages.append(Message(self, message))
+            returnMessages.append(try await Message(self, message))
         }
 
         return returnMessages
+    }
+    
+    public func getInteractionMessage(
+        from accountId: Snowflake,
+        token: String,
+        id: String
+    ) async throws -> Interaction {
+        let data = try await self.request(.getInteractionMessage(accountId, token, id))
+        return try await Interaction(self, data as! [String: Any])
     }
 
     /**
@@ -1135,7 +1144,7 @@ open class Swiftcord {
         var returnMessages = [Message]()
         let messages = data as! [[String: Any]]
         for message in messages {
-            returnMessages.append(Message(self, message))
+            returnMessages.append(try await Message(self, message))
         }
 
         return returnMessages
@@ -1648,7 +1657,7 @@ open class Swiftcord {
     ) async throws -> Message? {
         let data = try await self.request(.createMessage(channelId), body: ["content": content])
 
-        return Message(self, data as! [String: Any])
+        return try await Message(self, data as! [String: Any])
     }
 
     /**
@@ -1662,7 +1671,7 @@ open class Swiftcord {
         to channelId: Snowflake
     ) async throws -> Message {
         let data = try await self.request(.createMessage(channelId), body: ["content": content])
-        return Message(self, data as! [String: Any])
+        return try await Message(self, data as! [String: Any])
     }
 
     public func createThread(
@@ -1714,7 +1723,7 @@ open class Swiftcord {
 
         let data = try! await self.requestWithBodyAsData(.createMessage(channelId), body: jsonData)
 
-        return Message(self, data as! [String: Any])
+        return try await Message(self, data as! [String: Any])
     }
 
     /**
@@ -1732,7 +1741,7 @@ open class Swiftcord {
         let content = try! jsonEncoder.encode(content)
 
         let data = try await self.requestWithBodyAsData(.createMessage(channelId), body: content)
-        return Message(self, data as! [String: Any])
+        return try await Message(self, data as! [String: Any])
     }
 
     /**
@@ -1750,7 +1759,7 @@ open class Swiftcord {
         let content = try! jsonEncoder.encode(content)
 
         let data = try await self.requestWithBodyAsData(.createMessage(channelId), body: content)
-        return Message(self, data as! [String: Any])
+        return try await Message(self, data as! [String: Any])
     }
 
     public func setIntents(intents: Intents...) {

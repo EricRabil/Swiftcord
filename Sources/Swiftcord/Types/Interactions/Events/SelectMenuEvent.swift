@@ -7,6 +7,8 @@
 
 import Foundation
 
+extension Message: _Model {}
+
 public class SelectMenuEvent: InteractionEvent {
 
     public var channelId: Snowflake
@@ -31,8 +33,9 @@ public class SelectMenuEvent: InteractionEvent {
     public var ephemeral: Int
 
     public var isDefered: Bool
+    public let message: Message?
 
-    init(_ swiftcord: Swiftcord, data: [String: Any]) {
+    init(_ swiftcord: Swiftcord, data: [String: Any]) async throws {
         self.swiftcord = swiftcord
         self.token = data["token"] as! String
 
@@ -54,7 +57,8 @@ public class SelectMenuEvent: InteractionEvent {
 
         self.ephemeral = 0
         self.isDefered = false
-
+        
+        self.message = try await data.decode(swiftcord, "message")
         self.member = nil
         if let memberData = data["member"] as? [String: Any] {
             guard let guild = self.guild else {

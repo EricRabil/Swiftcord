@@ -18,11 +18,11 @@ public struct TextInput: Component {
     public let customId: String
     public let style: TextInputStyles
     public let label: String
-    public let minLength: Int?
-    public let maxLength: Int?
-    public let required: Bool?
-    public let value: String?
-    public let placeholder: String?
+    public var minLength: Int?
+    public var maxLength: Int?
+    public var required: Bool?
+    public var value: String?
+    public var placeholder: String?
 
     public init(
         customID: String,
@@ -43,5 +43,33 @@ public struct TextInput: Component {
         self.required = required
         self.value = value
         self.placeholder = placeholder
+    }
+}
+
+public extension InteractionBodyBuilder {
+    @discardableResult func addTextInput(_ input: TextInput) -> InteractionBodyBuilder {
+        addComponent(ActionRow(components: [input]))
+    }
+    
+    @discardableResult func addTextInput(
+        customID: String,
+        style: TextInputStyles,
+        label: String,
+        minLength: Int? = nil,
+        maxLength: Int? = nil,
+        required: Bool? = nil,
+        value: String? = nil,
+        placeholder: String? = nil
+    ) -> InteractionBodyBuilder {
+        addTextInput(TextInput(
+            customID: customID,
+            style: style,
+            label: label,
+            minLength: minLength,
+            maxLength: maxLength,
+            required: required,
+            value: value,
+            placeholder: placeholder
+        ))
     }
 }

@@ -7,46 +7,43 @@
 
 import Foundation
 
-public class MessageCommandEvent: InteractionEvent {
-
-    public var channelId: Snowflake
-
+public class BaseCommandEvent: InteractionEvent {
+    let data: [String: Any]
+    
     public let interactionId: Snowflake
-
-    public let name: String
-
     public let swiftcord: Swiftcord
-
     public let token: String
-
+    public var ephemeral: Int
+    public var isDefered: Bool
+    
+    public let name: String
+    
+    public var channelId: Snowflake
+    public var user: User
     public var member: Member?
+    public var guildId: Snowflake?
 
-    public let user: User
-
+    
     /// Guild object for this channel
     public var guild: Guild {
         return self.swiftcord.getGuild(for: channelId)!
     }
-
-    public let guildId: Snowflake
-
-    public let message: Message
-
-    public var ephemeral: Int
-
-    public var isDefered: Bool
-
-    init(_ swiftcord: Swiftcord, data: [String: Any]) {
+    
+    init(_ swiftcord: Swiftcord, data: [String: Any]) async throws {
+        self.data = data
         self.swiftcord = swiftcord
         self.token = data["token"] as! String
 
         self.channelId = Snowflake(data["channel_id"])!
 
-        self.guildId = Snowflake(data["guild_id"] as! String)!
+        self.guildId = Snowflake(data["guild_id"])
 
-        var userJson = data["member"] as! [String: Any]
-        userJson = userJson["user"] as! [String: Any]
-        self.user = User(swiftcord, userJson)
+        if let userJson = data["member"] as? [String: Any] {
+            self.member = Member(swiftcord, try await swiftcord.getGuild(guildId!, rest: true), userJson)
+            self.user = User(swiftcord, userJson["user"] as! [String: Any])
+        } else {
+            self.user = User(swiftcord, data["user"] as! [String: Any])
+        }
 
         self.interactionId = Snowflake(data["id"] as! String)!
         let name = data["data"] as! [String: Any]
@@ -55,7 +52,13 @@ public class MessageCommandEvent: InteractionEvent {
 
         self.ephemeral = 0
         self.isDefered = false
+    }
+}
 
+public class MessageCommandEvent: BaseCommandEvent {
+    public let message: Message
+
+    public override init(_ swiftcord: Swiftcord, data: [String: Any]) async throws {
         var message = data["data"] as! [String: Any]
 
         let targetId = message["target_id"] as! String
@@ -64,8 +67,8 @@ public class MessageCommandEvent: InteractionEvent {
         message =  message["messages"] as! [String: Any]
         message = message[targetId] as! [String: Any]
 
-        self.message = Message(swiftcord, message)
-
-        self.member = Member(swiftcord, guild, data["member"] as! [String: Any])
+        self.message = try await Message(swiftcord, message)
+        
+        try await super.init(swiftcord, data: data)
     }
 }
