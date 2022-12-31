@@ -7,6 +7,35 @@
 //
 
 import Foundation
+import DictionaryCoder
+
+@propertyWrapper public struct Indirect<T> {
+    class Box<T> {
+        var wrappedValue: T
+        init(wrappedValue: T) {
+            self.wrappedValue = wrappedValue
+        }
+    }
+    
+    let box: Box<T>
+    public var wrappedValue: T {
+        get { box.wrappedValue }
+        set { box.wrappedValue = newValue }
+    }
+    
+    public init(wrappedValue: T) {
+        self.box = Box(wrappedValue: wrappedValue)
+    }
+}
+
+public protocol _Optional { static var none: Self { get } }
+extension Optional: _Optional {}
+
+extension Indirect where T: _Optional {
+    public init() {
+        self.init(wrappedValue: .none)
+    }
+}
 
 /// Message Type
 public struct Message {
@@ -81,6 +110,8 @@ public struct Message {
 
     /// If message was sent by webhook, this is that webhook's ID
     public let webhookId: Snowflake?
+    
+    @Indirect public var interaction: Interaction?
 
     // MARK: Initializer
 
@@ -90,11 +121,13 @@ public struct Message {
      - parameter swiftcord: Parent class to get guilds from
      - parameter json: JSON representable as a dictionary
      */
-    init(_ swiftcord: Swiftcord, _ json: [String: Any]) {
+    init(_ swiftcord: Swiftcord, _ json: [String: Any]) async throws {
+        let dictionaryDecoder = DictionaryDecoder()
+        
         self.swiftcord = swiftcord
         let attachments = json["attachments"] as! [[String: Any]]
         for attachment in attachments {
-            self.attachments.append(Attachment(attachment))
+            self.attachments.append(try dictionaryDecoder.decode(from: attachment))
         }
 
         if json["webhook_id"] == nil {
@@ -105,7 +138,7 @@ public struct Message {
 
         self.content = json["content"] as! String
 
-        self.channel = swiftcord.getChannel(for: Snowflake(json["channel_id"])!)! as! TextChannel
+        self.channel = try await swiftcord.getChannel(Snowflake(json["channel_id"])!, rest: true)! as! TextChannel
 
         if let editedTimestamp = json["edited_timestamp"] as? String {
             self.editedTimestamp = editedTimestamp.date
@@ -115,7 +148,7 @@ public struct Message {
 
         let embeds = json["embeds"] as! [[String: Any]]
         for embed in embeds {
-            self.embeds.append(Embed(embed))
+            self.embeds.append(try dictionaryDecoder.decode(from: embed))
         }
 
         self.id = Snowflake(json["id"])!
@@ -159,6 +192,8 @@ public struct Message {
         }
 
         self.webhookId = Snowflake(json["webhook_id"])
+        
+        self.interaction = try await json.decode(swiftcord, "interaction")
     }
 
     // MARK: Functions
@@ -385,7 +420,7 @@ public struct AttachmentBuilder: Encodable {
 }
 
 /// Attachment Type
-public struct Attachment {
+public struct Attachment: Codable, Hashable {
 
     // MARK: Properties
 
