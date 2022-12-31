@@ -7,42 +7,45 @@
 
 import Foundation
 
-public class EmbedBuilder: Encodable {
+public class EmbedBuilder: Codable {
     /// Author dictionary from embed
-    var author: Author?
+    public internal(set) var author: Author?
 
     /// Side panel color of embed
-    var color: Int?
+    public internal(set) var color: Int?
 
     /// Description of the embed
-    var description: String?
+    public internal(set) var description: String?
 
     /// Fields for the embed
-    var fields: [Field]?
+    public internal(set) var fields: [Field]?
 
     /// Footer dictionary from embed
-    var footer: Footer?
+    public internal(set) var footer: Footer?
 
     /// Image data from embed
-    var image: Image?
-
+    public internal(set) var image: Image?
+    
+    /// Provider from embed
+    public internal(set) var provider: Provider?
+    
     /// Thumbnail data from embed
-    var thumbnail: Thumbnail?
-
-    /// Timestamp of the embed
-    var timestamp: String?
+    public internal(set) var thumbnail: Thumbnail?
 
     /// Title of the embed
-    var title: String?
+    public internal(set) var title: String?
 
     /// Type of embed | Discord says this should be considered deprecated. As such we set as rich
-    var type: String
+    public internal(set) var type: String
 
     /// URL of the embed
-    var url: String?
+    public internal(set) var url: String?
 
     /// Video data from embed
-    var video: Video?
+    public internal(set) var video: Video?
+    
+    /// Timestamp of the embed
+    public internal(set) var timestamp: String?
 
     // MARK: Initializers
 
@@ -148,7 +151,7 @@ public class EmbedBuilder: Encodable {
 }
 
 extension EmbedBuilder {
-    public struct Author: Encodable {
+    public struct Author: Codable, Hashable {
         public var iconUrl: String?
         public var name: String
         public var url: String?
@@ -160,7 +163,7 @@ extension EmbedBuilder {
         }
     }
 
-    public struct Field: Encodable {
+    public struct Field: Codable, Hashable {
         public var name: String
         public var value: String
         public var inline: Bool
@@ -172,44 +175,61 @@ extension EmbedBuilder {
         }
     }
 
-    public struct Footer: Encodable {
+    public struct Footer: Codable, Hashable {
         public var iconUrl: String?
+        public var proxyIconUrl: String?
         public var text: String
 
         public init(
             text: String,
+            proxyIconUrl: String? = nil,
             iconUrl: String? = nil
         ) {
             self.text = text
+            self.proxyIconUrl = proxyIconUrl
             self.iconUrl = iconUrl
         }
     }
 
-    public struct Image: Encodable {
+    public struct Image: Codable, Hashable {
         public var height: Int?
+        public var proxyUrl: String? = nil
         public var url: String
         public var width: Int?
 
-        public init(url: String, height: Int?, width: Int?) {
+        public init(url: String, proxyUrl: String? = nil, height: Int?, width: Int?) {
             self.height = height
             self.url = url
+            self.proxyUrl = proxyUrl
             self.width = width
         }
     }
 
-    public struct Thumbnail: Encodable {
+    public struct Thumbnail: Codable, Hashable {
         public var height: Int?
+        public var proxyUrl: String? = nil
         public var url: String
         public var width: Int?
 
-        public init(url: String, height: Int?, width: Int?) {
+        public init(url: String, proxyUrl: String? = nil, height: Int?, width: Int?) {
             self.height = height
+            self.proxyUrl = proxyUrl
             self.url = url
             self.width = width
         }
     }
+    
+    public struct Provider: Codable, Hashable {
+        public var name: String
+        public var url: String?
+        
+        public init(name: String, url: String? = nil) {
+            self.name = name
+            self.url = url
+        }
+    }
 
-    public struct Video: Encodable {
+    public struct Video: Codable, Hashable {
         public var height: Int?
         public var url: String
         public var width: Int?
@@ -226,3 +246,9 @@ extension EmbedBuilder {
 struct EmbedBody: Encodable {
     let embeds: [EmbedBuilder]
 }
+
+public typealias EmbedField = EmbedBuilder.Field
+public typealias EmbedAuthor = EmbedBuilder.Author
+public typealias EmbedImage = EmbedBuilder.Image
+public typealias EmbedThumbnail = EmbedBuilder.Thumbnail
+public typealias EmbedVideo = EmbedBuilder.Video
