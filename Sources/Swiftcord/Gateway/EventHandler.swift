@@ -20,7 +20,7 @@ extension Shard {
     func handleEvent(
         _ data: [String: Any],
         _ eventName: String
-    ) async {
+    ) async throws {
 
         guard let event = Event(rawValue: eventName) else {
             self.swiftcord.log("Received unknown event: \(eventName)")
@@ -35,23 +35,23 @@ extension Shard {
                 switch data["type"] as! Int {
                 case 0:
                     let channel = GuildText(self.swiftcord, data)
-                    await listener.onChannelCreate(event: channel)
+                    try await listener.onChannelCreate(event: channel)
 
                 case 1:
                     let dm = DM(self.swiftcord, data)
-                    await listener.onChannelCreate(event: dm)
+                    try await listener.onChannelCreate(event: dm)
 
                 case 2:
                     let channel = GuildVoice(self.swiftcord, data)
-                    await listener.onVoiceChannelCreate(event: channel)
+                    try await listener.onVoiceChannelCreate(event: channel)
 
                 case 3:
                     let group = GroupDM(self.swiftcord, data)
-                    await listener.onChannelCreate(event: group)
+                    try await listener.onChannelCreate(event: group)
 
                 case 4:
                     let category = GuildCategory(self.swiftcord, data)
-                    await listener.onCategoryCreate(event: category)
+                    try await listener.onCategoryCreate(event: category)
 
                 default: return
                 }
@@ -75,13 +75,13 @@ extension Shard {
                     // We made the case this broad so we can remove from our cache. We must now pass the proper type to the ListenerAdapter
                     if type == 0 {
                         // Text
-                        await listener.onChannelDelete(event: GuildText(self.swiftcord, data))
+                        try await listener.onChannelDelete(event: GuildText(self.swiftcord, data))
                     } else if type == 2 {
                         // Voice
-                        await listener.onVoiceChannelDelete(event: GuildVoice(self.swiftcord, data))
+                        try await listener.onVoiceChannelDelete(event: GuildVoice(self.swiftcord, data))
                     } else {
                         // Category
-                        await listener.onCategoryDelete(event: GuildCategory(self.swiftcord, data))
+                        try await listener.onCategoryDelete(event: GuildCategory(self.swiftcord, data))
                     }
 
                 case 1:
@@ -90,14 +90,14 @@ extension Shard {
                     guard let dm = self.swiftcord.dms.removeValue(forKey: userId) else {
                         return
                     }
-                    await listener.onChannelDelete(event: dm)
+                    try await listener.onChannelDelete(event: dm)
 
                 case 3:
                     let channelId = Snowflake(data["id"])!
                     guard let group = self.swiftcord.groups.removeValue(forKey: channelId) else {
                         return
                     }
-                    await listener.onChannelDelete(event: group)
+                    try await listener.onChannelDelete(event: group)
 
                 default: return
                 }
@@ -110,7 +110,7 @@ extension Shard {
                     return
                 }
 
-                await listener.onChannelPinUpdate(event: channel, lastPin: timestamp?.date)
+                try await listener.onChannelPinUpdate(event: channel, lastPin: timestamp?.date)
 
             /// CHANNEL_UPDATE
             case .channelUpdate:
@@ -127,20 +127,20 @@ extension Shard {
 
                     if type == 0 {
                         // Text
-                        await listener.onChannelUpdate(event: channel as! TextChannel)
+                        try await listener.onChannelUpdate(event: channel as! TextChannel)
                     } else if type == 2 {
                         // Voice
-                        await listener.onVoiceChannelUpdate(event: channel as! GuildVoice)
+                        try await listener.onVoiceChannelUpdate(event: channel as! GuildVoice)
                     } else {
                         // Category
-                        await listener.onCategoryUpdate(event: channel as! GuildCategory)
+                        try await listener.onCategoryUpdate(event: channel as! GuildCategory)
                     }
 
                 case 3:
                     let group = GroupDM(self.swiftcord, data)
                     self.swiftcord.groups[group.id] = group
 
-                    await listener.onChannelUpdate(event: group)
+                    try await listener.onChannelUpdate(event: group)
 
                 default: return
                 }
@@ -152,7 +152,7 @@ extension Shard {
                     return
                 }
                 let user = User(self.swiftcord, data["user"] as! [String: Any])
-                await listener.onGuildBan(guild: guild, user: user)
+                try await listener.onGuildBan(guild: guild, user: user)
 
             /// GUILD_BAN_REMOVE
             case .guildBanRemove:
@@ -161,7 +161,7 @@ extension Shard {
                     return
                 }
                 let user = User(self.swiftcord, data["user"] as! [String: Any])
-                await listener.onGuildUnban(guild: guild, user: user)
+                try await listener.onGuildUnban(guild: guild, user: user)
 
             /// GUILD_CREATE
             case .guildCreate:
@@ -170,16 +170,16 @@ extension Shard {
 
                 if self.swiftcord.unavailableGuilds[guild.id] != nil {
                     self.swiftcord.unavailableGuilds.removeValue(forKey: guild.id)
-                    await listener.onGuildAvailable(guild: guild)
+                    try await listener.onGuildAvailable(guild: guild)
                 } else {
-                    await listener.onGuildCreate(guild: guild)
+                    try await listener.onGuildCreate(guild: guild)
                 }
 
                 if self.swiftcord.options.willCacheAllMembers && guild.members.count != guild.memberCount {
                     self.requestOfflineMembers(for: guild.id)
                 }
 
-                await listener.onGuildReady(guild: guild)
+                try await listener.onGuildReady(guild: guild)
 
             /// GUILD_DELETE
             case .guildDelete:
@@ -191,9 +191,9 @@ extension Shard {
                 if data["unavailable"] != nil {
                     let unavailableGuild = UnavailableGuild(data, self.id)
                     self.swiftcord.unavailableGuilds[guild.id] = unavailableGuild
-                    await listener.onUnavailableGuildDelete(guild: unavailableGuild)
+                    try await listener.onUnavailableGuildDelete(guild: unavailableGuild)
                 } else {
-                    await listener.onGuildDelete(guild: guild)
+                    try await listener.onGuildDelete(guild: guild)
                 }
 
             /// GUILD_EMOJIS_UPDATE
@@ -205,7 +205,7 @@ extension Shard {
                 }
 
                 guild.emojis = emojis
-                await listener.onGuildEmojisUpdate(guild: guild, emojis: emojis)
+                try await listener.onGuildEmojisUpdate(guild: guild, emojis: emojis)
 
             /// GUILD_INTEGRATIONS_UPDATE
             case .guildIntegrationsUpdate:
@@ -214,7 +214,7 @@ extension Shard {
                     return
                 }
 
-                await listener.onGuildIntegrationUpdate(guild: guild)
+                try await listener.onGuildIntegrationUpdate(guild: guild)
 
             /// GUILD_MEMBER_ADD
             case .guildMemberAdd:
@@ -224,7 +224,7 @@ extension Shard {
                 }
                 let member = Member(self.swiftcord, guild, data)
                 guild.members[member.user!.id] = member
-                await listener.onGuildMemberJoin(guild: guild, member: member)
+                try await listener.onGuildMemberJoin(guild: guild, member: member)
 
             /// GUILD_MEMBER_REMOVE
             case .guildMemberRemove:
@@ -234,7 +234,7 @@ extension Shard {
                 }
                 let user = User(self.swiftcord, data["user"] as! [String: Any])
                 guild.members.removeValue(forKey: user.id)
-                await listener.onGuildMemberLeave(guild: guild, user: user)
+                try await listener.onGuildMemberLeave(guild: guild, user: user)
 
             /// GUILD_MEMBERS_CHUNK
             case .guildMembersChunk:
@@ -256,7 +256,7 @@ extension Shard {
                 }
                 let member = Member(self.swiftcord, guild, data)
                 guild.members[member.user!.id] = member
-                await listener.onGuildMemberUpdate(guild: guild, member: member)
+                try await listener.onGuildMemberUpdate(guild: guild, member: member)
 
             /// GUILD_ROLE_CREATE
             case .guildRoleCreate:
@@ -266,7 +266,7 @@ extension Shard {
                 }
                 let role = Role(data["role"] as! [String: Any])
                 guild.roles[role.id] = role
-                await listener.onGuildRoleCreate(guild: guild, role: role)
+                try await listener.onGuildRoleCreate(guild: guild, role: role)
 
             /// GUILD_ROLE_DELETE
             case .guildRoleDelete:
@@ -279,7 +279,7 @@ extension Shard {
                     return
                 }
                 guild.roles.removeValue(forKey: role.id)
-                await listener.onGuildRoleDelete(guild: guild, role: role)
+                try await listener.onGuildRoleDelete(guild: guild, role: role)
 
             /// GUILD_ROLE_UPDATE
             case .guildRoleUpdate:
@@ -289,7 +289,7 @@ extension Shard {
                 }
                 let role = Role(data["role"] as! [String: Any])
                 guild.roles[role.id] = role
-                await listener.onGuildRoleUpdate(guild: guild, role: role)
+                try await listener.onGuildRoleUpdate(guild: guild, role: role)
 
             /// GUILD_UPDATE
             case .guildUpdate:
@@ -298,7 +298,7 @@ extension Shard {
                     return
                 }
                 guild.update(data)
-                await listener.onGuildUpdate(guild: guild)
+                try await listener.onGuildUpdate(guild: guild)
 
             /// MESSAGE_CREATE
             case .messageCreate:
@@ -322,13 +322,13 @@ extension Shard {
 					return
 				}
 
-                let msg = Message(self.swiftcord, data)
+                let msg = try await Message(self.swiftcord, data)
 
                 if let channel = msg.channel as? GuildText {
                     channel.lastMessageId = msg.id
                 }
 
-                await listener.onMessageCreate(event: msg)
+                try await listener.onMessageCreate(event: msg)
 
             /// MESSAGE_DELETE
             case .messageDelete:
@@ -337,7 +337,7 @@ extension Shard {
                     return
                 }
                 let messageId = Snowflake(data["id"])!
-                await listener.onMessageDelete(messageId: messageId, channel: channel)
+                try await listener.onMessageDelete(messageId: messageId, channel: channel)
 
             /// MESSAGE_BULK_DELETE
             case .messageDeleteBulk:
@@ -346,7 +346,7 @@ extension Shard {
                     return
                 }
                 let messageIds = (data["ids"] as! [String]).map({ Snowflake($0)! })
-                await listener.onMessageBulkDelete(messageIds: messageIds, channel: channel)
+                try await listener.onMessageBulkDelete(messageIds: messageIds, channel: channel)
 
             /// MESSAGE_REACTION_REMOVE_ALL
             case .messageReactionRemoveAll:
@@ -355,7 +355,7 @@ extension Shard {
                     return
                 }
                 let messageId = Snowflake(data["message_id"])!
-                await listener.onMessageReactionRemoveAll(messageId: messageId, channel: channel)
+                try await listener.onMessageReactionRemoveAll(messageId: messageId, channel: channel)
 
             /// MESSAGE_UPDATE
             case .messageUpdate:
@@ -378,7 +378,7 @@ extension Shard {
                 self.swiftcord.guilds[guildID]?.members[userId]?.presence = presence
                 let member = self.swiftcord.guilds[guildID]?.members[userId]
 
-                await listener.onPresenceUpdate(member: member, presence: presence)
+                try await listener.onPresenceUpdate(member: member, presence: presence)
 
             /// READY
             case .ready:
@@ -393,11 +393,11 @@ extension Shard {
                 }
 
                 self.swiftcord.shardsReady += 1
-                await listener.onShardReady(id: self.id)
+                try await listener.onShardReady(id: self.id)
 
                 if self.swiftcord.shardsReady == self.swiftcord.shardCount {
                     self.swiftcord.user = User(self.swiftcord, data["user"] as! [String: Any])
-                    await listener.onReady(botUser: self.swiftcord.user!)
+                    try await listener.onReady(botUser: self.swiftcord.user!)
                 }
 
             /// MESSAGE_REACTION_ADD,
@@ -409,7 +409,7 @@ extension Shard {
                 let userID = Snowflake(data["user_id"])!
                 let messageID = Snowflake(data["message_id"])!
                 let emoji = Emoji(data["emoji"] as! [String: Any])
-                await listener.onMessageReactionAdd(channel: channel, messageId: messageID, userId: userID, emoji: emoji)
+                try await listener.onMessageReactionAdd(channel: channel, messageId: messageID, userId: userID, emoji: emoji)
 
             /// MESSAGE_REACTION_REMOVE
             case .reactionRemove:
@@ -420,20 +420,20 @@ extension Shard {
                 let userID = Snowflake(data["user_id"])!
                 let messageID = Snowflake(data["message_id"])!
                 let emoji = Emoji(data["emoji"] as! [String: Any])
-                await listener.onMessageReactionRemove(channel: channel, messageId: messageID, userId: userID, emoji: emoji)
+                try await listener.onMessageReactionRemove(channel: channel, messageId: messageID, userId: userID, emoji: emoji)
 
             /// THREAD_CREATE
             case .threadCreate:
                 let thread = ThreadChannel(swiftcord, data)
-                await listener.onThreadCreate(event: thread)
+                try await listener.onThreadCreate(event: thread)
 
             case .threadDelete:
                 let thread = ThreadChannel(swiftcord, data)
-                await listener.onThreadDelete(event: thread)
+                try await listener.onThreadDelete(event: thread)
 
             case .threadUpdate:
                 let thread = ThreadChannel(swiftcord, data)
-                await listener.onThreadUpdate(event: thread)
+                try await listener.onThreadUpdate(event: thread)
 
             /// TYPING_START
             case .typingStart:
@@ -448,11 +448,11 @@ extension Shard {
                     return
                 }
                 let userId = Snowflake(data["user_id"])!
-                await listener.onTypingStart(channel: channel, userId: userId, time: timestamp)
+                try await listener.onTypingStart(channel: channel, userId: userId, time: timestamp)
 
             /// USER_UPDATE
             case .userUpdate:
-                await listener.onUserUpdate(event: User(self.swiftcord, data))
+                try await listener.onUserUpdate(event: User(self.swiftcord, data))
 
             /// VOICE_STATE_UPDATE
             case .voiceStateUpdate:
@@ -469,12 +469,12 @@ extension Shard {
                     guild.voiceStates[userId] = voiceState
                     guild.members[userId]?.voiceState = voiceState
 
-                    await listener.onVoiceChannelJoin(userId: userId, state: voiceState)
+                    try await listener.onVoiceChannelJoin(userId: userId, state: voiceState)
                 } else {
                     guild.voiceStates.removeValue(forKey: userId)
                     guild.members[userId]?.voiceState = nil
 
-                    await listener.onVoiceChannelLeave(userId: userId)
+                    try await listener.onVoiceChannelLeave(userId: userId)
                 }
 
             case .voiceServerUpdate:
@@ -511,11 +511,11 @@ extension Shard {
                     // Application Command event
                     switch type {
                     case 1:
-                        await self.handleEvent(data, Event.slashCommandEvent.rawValue)
+                        try await self.handleEvent(data, Event.slashCommandEvent.rawValue)
                     case 2:
-                        await self.handleEvent(data, Event.userCommandEvent.rawValue)
+                        try await self.handleEvent(data, Event.userCommandEvent.rawValue)
                     case 3:
-                        await self.handleEvent(data, Event.messageCommandEvent.rawValue)
+                        try await self.handleEvent(data, Event.messageCommandEvent.rawValue)
                     default: return
                     }
 
@@ -524,41 +524,41 @@ extension Shard {
                     let type = interactionDict["component_type"] as! Int
                     // Message component event (Buttons/Select Boxes)
                     if type == 2 {
-                        await self.handleEvent(data, Event.buttonEvent.rawValue)
+                        try await self.handleEvent(data, Event.buttonEvent.rawValue)
                     } else if type == 3 {
-                        await self.handleEvent(data, Event.selectMenuEvent.rawValue)
+                        try await self.handleEvent(data, Event.selectMenuEvent.rawValue)
                     }
                 } else if initialType == 5 {
-                    await self.handleEvent(data, Event.textInputEvent.rawValue)
+                    try await self.handleEvent(data, Event.textInputEvent.rawValue)
                 }
 
             case .slashCommandEvent:
-                let event = SlashCommandEvent(swiftcord, data: data)
+                let event = try await SlashCommandEvent(swiftcord, data: data)
 
-                await listener.onSlashCommandEvent(event: event)
+                try await listener.onSlashCommandEvent(event: event)
 
             case .buttonEvent:
-                let event = ButtonEvent(swiftcord, data: data)
+                let event = try await ButtonEvent(swiftcord, data: data)
 
-                await listener.onButtonClickEvent(event: event)
+                try await listener.onButtonClickEvent(event: event)
 
             case .selectMenuEvent:
-                let event = SelectMenuEvent(swiftcord, data: data)
+                let event = try await SelectMenuEvent(swiftcord, data: data)
 
-                await listener.onSelectMenuEvent(event: event)
+                try await listener.onSelectMenuEvent(event: event)
 
             case .userCommandEvent:
-                let event = UserCommandEvent(swiftcord, data: data)
+                let event = try await UserCommandEvent(swiftcord, data: data)
 
-                await listener.onUserCommandEvent(event: event)
+                try await listener.onUserCommandEvent(event: event)
             case .messageCommandEvent:
-                let event = MessageCommandEvent(swiftcord, data: data)
+                let event = try await MessageCommandEvent(swiftcord, data: data)
 
-                await listener.onMessageCommandEvent(event: event)
+                try await listener.onMessageCommandEvent(event: event)
             case .textInputEvent:
                 let event = TextInputEvent(swiftcord, data: data)
                 
-                await listener.onTextInputEvent(event: event)
+                try await listener.onTextInputEvent(event: event)
             }
         }
     }

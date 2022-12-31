@@ -35,7 +35,7 @@ protocol Gateway: AnyObject {
 
     func handleDisconnect(for code: Int) async
 
-    func handlePayload(_ payload: Payload) async
+    func handlePayload(_ payload: Payload) async throws
 
     func heartbeat(at interval: Int) async
 
@@ -79,7 +79,11 @@ extension Gateway {
 
             self.session?.onText { _, text in
                 self.swiftcord.trace("Handle incoming payload: \(text)")
-                await self.handlePayload(Payload(with: text))
+                do {
+                    try await self.handlePayload(Payload(with: text))
+                } catch {
+                    self.swiftcord.error("Error while handling payload: \(error)")
+                }
             }
 
             self.session?.onClose.whenComplete { result in

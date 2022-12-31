@@ -113,7 +113,7 @@ class Shard: Gateway {
      Handles gateway events from WS connection with Discord
      - parameter payload: Payload struct that Discord sent as JSON
      */
-    func handlePayload(_ payload: Payload) async {
+    func handlePayload(_ payload: Payload) async throws {
 
         if let sequenceNumber = payload.s {
             self.lastSeq = sequenceNumber
@@ -128,7 +128,7 @@ class Shard: Gateway {
             return
         }
 
-        await self.handleEvent(payload.d as! [String: Any], payload.t!)
+        try await self.handleEvent(payload.d as! [String: Any], payload.t!)
     }
 
     /**
