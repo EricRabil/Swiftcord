@@ -13,12 +13,12 @@ let package = Package(
     // Logging for Swift
     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.2"),
     // Library that contains common mimetypes
-    .package(url: "https://github.com/SketchMaster2001/MimeType.git", .branch("master"))
+    .package(url: "https://github.com/sendyhalim/Swime", from: "3.0.7"),
   ],
   targets: [
     .target(
       name: "Swiftcord",
-      dependencies: [.product(name: "WebSocketKit", package: "websocket-kit"), .product(name: "Logging", package: "swift-log"), "MimeType"]
+      dependencies: [.product(name: "WebSocketKit", package: "websocket-kit"), .product(name: "Logging", package: "swift-log"), "Swime"]
     ),
     .testTarget(
         name: "SwiftcordTests",

@@ -11,7 +11,7 @@ import FoundationNetworking
 #endif
 
 import Foundation
-import MimeType
+import Swime
 
 
 /// Image Handler
@@ -42,7 +42,7 @@ extension Swiftcord {
         }
 
         for (i, attachment) in fileData.enumerated() {
-            let mimetype = MimeType(path: attachment.filename).value
+            let mimetype = Swime.mimeType(data: attachment.data)?.mime ?? "application/octet-stream"
             
             body.append("--\(boundary)\r\n")
             body.append(
@@ -82,7 +82,7 @@ extension Swiftcord {
         }
 
         for (i, attachment) in fileData.enumerated() {
-            let mimetype = MimeType(path: attachment.filename).value
+            let mimetype = Swime.mimeType(data: attachment.data)?.mime ?? "application/octet-stream"
             
             body.append("--\(boundary)\r\n")
             body.append(
